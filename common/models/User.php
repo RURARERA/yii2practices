@@ -8,6 +8,13 @@ use yii\db\ActiveRecord;
 use yii\db\Expression;
 use yii\web\IdentityInterface;
 use yii\helpers\Security;
+use backend\models\Role;
+use yii\helpers\ArrayHelper; // it is used to format a 3 relationship methods
+use backend\models\Status;
+use backend\models\UserType;
+use frontend\models\Profile;
+use yii\helpers\Url;
+use yii\helpers\Html;
 //use yii\base\Security;
  
         /**
@@ -77,7 +84,14 @@ class User extends ActiveRecord implements IdentityInterface
            ['email', 'required'],
            ['email', 'email'],
            ['email', 'unique'],
-           
+
+           [['role_id'],'in','range'=>array_keys($this->getRoleList())],   // Role to get only the role_id values that are in the range of values in user_value field
+
+           ['status_id','default','value'=>self::STATUS_ACTIVE],
+           [['status_id'],'in','range'=>array_keys($this->getStatusList())],
+
+
+           [['user_type_id'],'in', 'range'=>array_keys($this->getUserTypeList())],
        ];
     }
     
@@ -87,6 +101,16 @@ class User extends ActiveRecord implements IdentityInterface
     {
      return [
             /* Your other attribute labels */
+
+            'roleName' => Yii::t('app', 'Role'),
+             'statusName' => Yii::t('app', 'Status'),
+             'profileId' => Yii::t('app', 'Profile'),
+             'profileLink' => Yii::t('app', 'Profile'),
+             'userLink' => Yii::t('app', 'User'),
+             'username' => Yii::t('app', 'User'),
+             'userTypeName' => Yii::t('app', 'User Type'),
+             'userTypeId' => Yii::t('app', 'User Type'),
+             'userIdLink' => Yii::t('app', 'ID'),
             ];
     }
  
@@ -234,5 +258,171 @@ class User extends ActiveRecord implements IdentityInterface
     {
         $this->password_reset_token = null;
     }
+
+
+    // to assign user_id from profile data base to id here
+
+    public function getProfile()
+{
+  return $this->hasOne(Profile::className(), ['user_id' => 'id']);
+}
+
+/**
+//  update user model with Role
+
+public function getRole()
+{
+ return $this->hasOne(Role::className(),['id'=>'role_id']); // one user has one role
+}
+
+*/
+
+/**
+        * get role relationship
+        *
+        */
+        
+    public function getRole()
+    {
+        return $this->hasOne(Role::className(), ['id' => 'role_id']);
+    }
     
+        /**
+        * get role name
+        *
+        */
+        
+    public function getRoleName()
+    {
+        return $this->role ? $this->role->role_name : '- no role -';
+    }
+    
+        /**
+        * get list of roles for dropdown 
+        * we want to return a list of ids and name using dropdown lists in the UI 
+        */
+        
+    public static function getRoleList()
+    {
+        $droptions = Role::find()->asArray()->all();
+        return ArrayHelper::map($droptions, 'id', 'role_name');
+    }
+    /**
+        * get status relation
+        *
+        */
+        
+    public function getStatus()
+    {
+        return $this->hasOne(Status::className(), ['id' => 'status_id']);
+    }
+    
+       /**
+        * * get status name
+        *
+        */
+        
+    public function getStatusName()
+    {
+        return $this->status ? $this->status->status_name : '- no status -';
+    }
+    
+       /**
+        * get list of statuses for dropdown
+        */
+        
+    public static function getStatusList()
+    {
+        $droptions = Status::find()->asArray()->all();
+        return ArrayHelper::map($droptions, 'id', 'status_name');
+    }
+    
+    /**
+     * getUserType
+    */
+    public function getUserType()
+    {
+     return $this->hasOne(UserType::className(),['id'=>'user_type_id']);  //one use has one user type
+     
+    }
+
+       /**
+        * get user type name
+        * 
+        */
+ 
+    public function getUserTypeName() 
+    {
+        return $this->userType ? $this->userType->user_type_name : '- no user type -';
+    }
+    
+      /**
+       * get list of user types for dropdown
+       */
+ 
+    public static function getUserTypeList()
+    {      
+        $droptions = UserType::find()->asArray()->all();
+        return ArrayHelper::map($droptions, 'id', 'user_type_name');  
+    }
+    
+      /**
+       * get user type id
+       * 
+       */
+    
+    public function getUserTypeId() 
+    {
+        return $this->userType ? $this->userType->id : 'none';
+    }
+
+     /**
+         * @getProfileId
+         * 
+         */
+     
+     public function getProfileId() 
+     {
+        return $this->profile ? $this->profile->id : 'none';
+     }
+  
+        /**
+         * @getProfileLink
+         * 
+         */
+
+    public function getProfileLink() 
+    {
+        $url = Url::to(['profile/view', 'id'=>$this->profileId]);
+        $options = [];
+        return Html::a($this->profile ? 'profile' : 'none', $url, $options);
+    }
+    /**
+         * get user id Link
+         *
+         */
+         
+    public function getUserIdLink()
+    {
+        $url = Url::to(['user/update', 'id'=>$this->id]);
+        $options = [];
+        return Html::a($this->id, $url, $options);
+    }
+    
+        /**
+         * @getUserLink
+         * 
+         */
+
+    public function getUserLink() 
+    {
+        $url = Url::to(['user/view', 'id'=>$this->id]);
+        $options = []; 
+        return Html::a($this->username, $url, $options); 
+    }
+
+
+
+    
+
 }
